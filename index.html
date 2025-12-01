@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Animated Sidebar — Sample</title>
+  <style>
+    :root{
+      --bg:#0f0f11; --panel:#171718; --muted:#9aa0a6; --accent:#5865f2; --glass: rgba(255,255,255,0.03);
+      --sidebar-w:84px; --radius:12px; --gap:14px;
+      --ease: cubic-bezier(.2,.9,.3,1);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --motion-duration: 320ms;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#0b0b0c 0%, #111113 100%);
+      color:#e6e6e6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root{ --motion-duration: 0ms }
+    }
+
+    .app{ display:flex;min-height:100vh; }
+
+    .sidebar{
+      width:var(--sidebar-w);
+      padding:18px 10px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-right:1px solid rgba(255,255,255,0.03);
+      display:flex;flex-direction:column;gap:var(--gap);
+      align-items:center;
+    }
+
+    .brand{
+      width:48px;height:48px;border-radius:10px;background:var(--glass);
+      display:flex;align-items:center;justify-content:center;font-weight:700;
+      color:var(--accent);font-size:18px;
+      box-shadow: 0 4px 18px rgba(88,101,242,0.06);
+      transform-origin:center;
+      animation:brand-pulse 3200ms infinite linear;
+    }
+    @keyframes brand-pulse{
+      0%{ transform:scale(1) }
+      50%{ transform:scale(1.03) }
+      100%{ transform:scale(1) }
+    }
+
+    .menu{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px;align-items:center}
+    .menu li{width:48px;height:48px;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;outline: none;}
+    .menu li:hover{background:rgba(255,255,255,0.02);transform:translateY(-2px);transition:transform var(--motion-duration) var(--ease), background var(--motion-duration) var(--ease)}
+    .menu li:focus{box-shadow:0 0 0 3px rgba(88,101,242,0.12);border-radius:12px}
+
+    .menu .num{
+      display:inline-block;width:34px;height:34px;border-radius:8px;
+      background:#16161a;border:1px solid rgba(255,255,255,0.03);
+      display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600
+    }
+
+    .submenu-panel{
+      position:absolute;left:calc(100% + 14px);top:50%;transform:translateY(-50%);
+      width:260px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(6px);
+      box-shadow:0 8px 30px rgba(0,0,0,0.6);
+      opacity:0;pointer-events:none;transform-origin:left center;
+      transition:opacity var(--motion-duration) var(--ease), transform var(--motion-duration) var(--ease);
+      transform:translate3d(18px,-50%,0) scale(.99);
+      z-index:50;
+      will-change: transform, opacity;
+    }
+    .submenu-panel.open{
+      opacity:1;pointer-events:auto;transform:translate3d(8px,-50%,0) scale(1)
+    }
+
+    .submenu-title{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .submenu-list{display:flex;flex-direction:column;gap:8px}
+    .sub-item{
+      display:flex;align-items:center;gap:12px;padding:8px;border-radius:10px;cursor:pointer;
+      transition:background var(--motion-duration) var(--ease), transform var(--motion-duration) var(--ease);
+    }
+    .sub-item:hover{background:rgba(255,255,255,0.02);transform:translateX(6px)}
+    .sub-item:focus{outline: none; box-shadow:0 0 0 3px rgba(88,101,242,0.08)}
+    .sub-bullet{
+      width:36px;height:36px;border-radius:8px;background:#121216;
+      display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;
+      transition: transform 260ms var(--ease)
+    }
+    .sub-item:hover .sub-bullet{ transform: rotate(-8deg) translateY(-1px) }
+
+    .sub-label{font-size:14px;color:#e9e9ea}
+
+    .main{
+      flex:1;padding:28px 36px;display:flex;flex-direction:column;gap:18px
+    }
+
+    .modules{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+
+    .module-btn{
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.03);
+      padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;color:#fff;
+      transform:translateY(0);
+      transition: transform 260ms var(--ease), box-shadow 260ms var(--ease), background 220ms var(--ease);
+      will-change: transform, box-shadow;
+      opacity:0;
+    }
+    .module-btn:focus{outline: none; box-shadow:0 0 0 4px rgba(88,101,242,0.1)}
+    .module-btn:hover{ transform:translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: rgba(255,255,255,0.04) }
+
+    .modules.enter .module-btn{ animation:module-pop var(--motion-duration) var(--ease) forwards }
+    .modules.enter .module-btn:nth-child(1){ animation-delay: 0ms }
+    .modules.enter .module-btn:nth-child(2){ animation-delay: 45ms }
+    .modules.enter .module-btn:nth-child(3){ animation-delay: 90ms }
+    .modules.enter .module-btn:nth-child(4){ animation-delay: 135ms }
+    .modules.enter .module-btn:nth-child(5){ animation-delay: 180ms }
+
+    @keyframes module-pop {
+      from{ opacity:0; transform: translateY(8px) scale(.995) }
+      to{ opacity:1; transform: translateY(0) scale(1) }
+    }
+
+    .two-col{display:flex;gap:24px;margin-top:18px;align-items:flex-start;justify-content:center;opacity:0;transform:translateY(8px);transition:opacity var(--motion-duration) var(--ease), transform var(--motion-duration) var(--ease)}
+    .two-col.show{ opacity:1; transform:translateY(0) }
+
+    .col{
+      background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;min-width:220px;max-width:340px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.015);
+    }
+    .col h3{margin:0 0 8px;font-size:15px;color:var(--muted)}
+    .col ul{margin:0;padding-left:18px}
+    .col a{color:var(--accent);text-decoration:none}
+    .col a.download-link{ display:inline-flex; gap:8px; align-items:center; padding:6px 8px; border-radius:8px; transition: background 200ms var(--ease) }
+    .col a.download-link:hover{ background: rgba(88,101,242,0.06) }
+
+    @media (max-width:880px){
+      .sidebar{display:none}
+      .two-col{flex-direction:column;align-items:stretch}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="left sidebar">
+      <div class="brand" title="SEM">SEM</div>
+
+      <ul class="menu" role="list">
+        <li title="1"><div class="num">1</div></li>
+        <li id="menu-2" title="2" aria-haspopup="true" aria-expanded="false">
+          <div class="num">2</div>
+          <div class="submenu-panel" id="submenu-2" role="menu" aria-hidden="true">
+            <div class="submenu-title">Department list</div>
+            <div class="submenu-list">
+              <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">T</div><div class="sub-label">TNT</div></div>
+              <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">D</div><div class="sub-label">DLD</div></div>
+              <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">M</div><div class="sub-label">DMGT</div></div>
+              <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">F</div><div class="sub-label">FSD</div></div>
+              <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">DS</div><div class="sub-label">DS</div></div>
+            </div>
+          </div>
+        </li>
+
+        <li id="menu-3" title="3" aria-haspopup="true" aria-expanded="false"><div class="num">3</div>
+        <div class="submenu-panel" id="submenu-3" role="menu" aria-hidden="true">
+          <div class="submenu-title">Department list</div>
+          <div class="submenu-list">
+            <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">T</div><div class="sub-label">TNT</div></div>
+            <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">D</div><div class="sub-label">DLD</div></div>
+            <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">M</div><div class="sub-label">DMGT</div></div>
+            <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">F</div><div class="sub-label">FSD</div></div>
+            <div class="sub-item" role="menuitem" tabindex="0"><div class="sub-bullet">DS</div><div class="sub-label">DS</div></div>
+          </div>
+        </div>
+        </li>
+        <li title="4"><div class="num">4</div></li>
+        <li title="5"><div class="num">5</div></li>
+        <li title="6"><div class="num">6</div></li>
+        <li title="7"><div class="num">7</div></li>
+        <li title="8"><div class="num">8</div></li>
+      </ul>
+
+    </aside>
+
+    <main class="main" id="main">
+      <div style="flex:1;display:grid;place-items:center;color:var(--muted)">
+        <div id="content-area" style="max-width:780px;text-align:center"></div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  (function(){
+    const triggers = [
+      {trigger: document.getElementById('menu-2'), panel: document.getElementById('submenu-2')},
+      {trigger: document.getElementById('menu-3'), panel: document.getElementById('submenu-3')}
+    ];
+
+    let openPair = null;
+
+    function openPanel(pair){
+      pair.panel.classList.add('open');
+      pair.panel.setAttribute('aria-hidden','false');
+      pair.trigger.setAttribute('aria-expanded','true');
+      openPair = pair;
+    }
+    function closePanel(pair){
+      if(!pair) pair = openPair;
+      if(!pair) return;
+      pair.panel.classList.remove('open');
+      pair.panel.setAttribute('aria-hidden','true');
+      pair.trigger.setAttribute('aria-expanded','false');
+      openPair = null;
+    }
+
+    function renderModules(content, dept){
+      content.innerHTML = `
+        <h1 style="margin:0 0 12px">Modules for ${dept}</h1>
+        <div class="modules" id="modules-container">
+          <button class="module-btn" data-module="Module 1">Module 1</button>
+          <button class="module-btn" data-module="Module 2">Module 2</button>
+          <button class="module-btn" data-module="Module 3">Module 3</button>
+          <button class="module-btn" data-module="Module 4">Module 4</button>
+          <button class="module-btn" data-module="Module 5">Module 5</button>
+        </div>
+        <div id="module-detail"></div>`;
+
+      const modulesWrap = document.getElementById('modules-container');
+      requestAnimationFrame(()=> {
+        modulesWrap.classList.add('enter');
+      });
+
+      content.querySelectorAll('.module-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          showTwoColumn(btn.getAttribute('data-module'));
+        });
+        btn.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+        });
+      });
+    }
+
+    // UPDATED: relative PDF paths (files must exist in the repo root)
+    const modulePdfMap = {
+      "Module 1": [
+        {name: "Module 1 - Notes.pdf", url: "./E-Note_41176_Content_Document_20250916034814PM.pdf"},
+        {name: "Module 1 - Lecture.pdf", url: "./E-Note_41176_Content_Document_20250916034814PM.pdf"}
+      ],
+      "Module 2": [
+        {name: "Module 2 - Notes.pdf", url: "./E-Note_41181_Content_Document_20250916035426PM.pdf"},
+        {name: "Module 2 - Lecture.pdf", url: "./E-Note_41181_Content_Document_20250916035426PM.pdf"}
+      ],
+      "Module 3": [
+        {name: "Module 3 - Notes.pdf", url: "./E-Note_41179_Content_Document_20250916035045PM.pdf"},
+        {name: "Module 3 - Lecture.pdf", url: "./E-Note_41179_Content_Document_20250916035045PM.pdf"}
+      ],
+      "Module 4": [
+        {name: "Module 4 - Notes.pdf", url: "./E-Note_41177_Content_Document_20250916034925PM.pdf"},
+        {name: "Module 4 - Lecture.pdf", url: "./E-Note_41177_Content_Document_20250916034925PM.pdf"}
+      ],
+      "Module 5": [
+        {name: "Module 5 - Notes.pdf", url: "./E-Note_45264_Content_Document_20251121041505PM.pdf"},
+        {name: "Module 5 - Lecture.pdf", url: "./E-Note_45264_Content_Document_20251121041505PM.pdf"}
+      ],
+    };
+
+    // YOUR YouTube links
+    const moduleLinksMap = {
+      "Module 1": [
+        {label: "Module 1 Video", url: "https://youtu.be/NqeUG8FEvCo?si=DoK3LFna93jw7lw5"}
+      ],
+      "Module 2": [
+        {label: "Module 2 Playlist", url: "https://www.youtube.com/watch?v=NdouX5-KD6Y&list=PLU6SqdYcYsfIXjT49bVTz4KjqHD5fGQY8"}
+      ],
+      "Module 3": [
+        {label: "Module 3 Playlist", url: "https://www.youtube.com/watch?v=GtXmS5YH7XM&list=PLU6SqdYcYsfKE_PmF9XYum9mvZ8R6iR0U"}
+      ],
+      "Module 4": [
+        {label: "Module 4 Video", url: "https://youtu.be/Ym1EUjTWMnE?si=_7RokccEpoN7CZOx"}
+      ],
+      "Module 5": [
+        {label: "Module 5 Playlist", url: "https://www.youtube.com/watch?v=OPYcGa-UBnE&list=PLM9RnGtTy9__YuVfAes9jCvDBdrjyMn6x"}
+      ]
+    };
+
+    function showTwoColumn(moduleName){
+      const detail = document.getElementById('module-detail');
+      const pdfs = modulePdfMap[moduleName] || [];
+      const links = moduleLinksMap[moduleName] || [];
+
+      // defensive: if pdfs array is empty, show message
+      const pdfList = pdfs.length ? pdfs.map(p=>`<li><a class="download-link" href="${p.url}" download>${p.name}</a></li>`).join('') : '<li>No PDFs uploaded yet</li>';
+      const linkList = links.length ? links.map(l=>`<li><a href="${l.url}" target="_blank" rel="noopener noreferrer">${l.label}</a></li>`).join('') : '<li>No links available</li>';
+
+      detail.innerHTML = `
+        <div class="two-col" id="two-col">
+          <div class="col">
+            <h3>PDFs</h3>
+            <ul>${pdfList}</ul>
+          </div>
+          <div class="col">
+            <h3>Links</h3>
+            <ul>${linkList}</ul>
+          </div>
+        </div>
+      `;
+
+      requestAnimationFrame(()=> {
+        const twoCol = document.getElementById('two-col');
+        if(twoCol) twoCol.classList.add('show');
+      });
+    }
+
+    triggers.forEach(pair=>{
+      if(!pair.trigger || !pair.panel) return;
+      pair.trigger.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if(openPair && openPair.trigger === pair.trigger){
+          closePanel(pair);
+        } else {
+          closePanel();
+          openPanel(pair);
+        }
+      });
+
+      pair.panel.querySelectorAll('.sub-item').forEach(it=>{
+        it.addEventListener('click', ()=>{
+          const dept = it.querySelector('.sub-label').innerText.trim();
+          renderModules(document.getElementById('content-area'), dept);
+          closePanel(pair);
+        });
+        it.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); it.click(); }
+        });
+      });
+    });
+
+    document.addEventListener('click', (e)=>{
+      if(!openPair) return;
+      if(!openPair.trigger.contains(e.target) && !openPair.panel.contains(e.target)) closePanel();
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape') closePanel();
+    });
+
+    // initial content
+    const content = document.getElementById('content-area');
+    content.innerHTML = `<div style="color:var(--muted)"><strong>Open a department</strong> — click the small sidebar number (2 or 3) and choose a department.</div>`;
+
+  })();
+</script>
+
+</body>
+</html>
